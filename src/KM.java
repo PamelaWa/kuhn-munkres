@@ -183,18 +183,32 @@ public class KM {
 
         //TODO: Create function to find/return augmenting path:  augPath = findAugPath(equalityList, matchedEdges);
 
-        //TODO: Create function to return alpha value:  alpha = findAlpha(vertexList, edgeList
+        //TODO: Create function to return alpha value:  alpha = findAlpha(vertexList, S, T)
 
 
         Vertex x1 = getVertex(vertexList, 'x', 1);
+        System.out.println("x1: " + x1);
+
         Vertex y2 = getVertex(vertexList, 'y', 2);
+        System.out.println("y2: " + y2);
+
         System.out.println("x1.edges: " + x1.edges);
         System.out.println("y2.edges: " + y2.edges);
 
         System.out.println("equalityGraph:" + equalityGraph);
 
+
+
         while(matchedEdges.size() < n){
-            //TODO: Do the algorithm
+            //TODO: Check equalityGraph for an augmenting path, and if found 'flip it' and GOTO WHILE.
+
+            //TODO: (1) Select a free X vertex. (vertexList where no edge in matchedEdges has this x)
+            //TODO: (2) Add the free X to list S.
+            //TODO: (3) If N(S) in T, update vertex labels after calculating 'alpha' value.
+            //TODO:     --Reload equalityGraph after labels have been updated.  GOTO WHILE.
+            //TODO: If N(S) != T, select a y from N(S) - T.
+            //TODO:     --If the y is free, add the new (x,y) edge to matchedEdges and GOTO WHILE.
+            //TODO:     --If y is already matched to z, add z to S and y to T GOTO 3.
 
             break;
         }
