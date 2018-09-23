@@ -4,7 +4,9 @@ import sun.awt.image.ImageWatched;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 
 
 public class KM {
@@ -267,12 +269,59 @@ public class KM {
         return null;
     }
 
-    public static boolean isYFree(Vertex y, LinkedList<Edge> matchedEdges){
+    public static Edge findYsMatchingEdge(Vertex y, LinkedList<Edge> matchedEdges){
         for(Edge e : matchedEdges){
-            if (e.yId == y.id) return false;
+            if (e.yId == y.id) return e;
+        }
+        return null;
+    }
+
+    public static Integer findAlpha(LinkedList<Vertex> vertexList, LinkedList<Vertex> S, LinkedList<Vertex> T){
+        //Alpha is the minimum slack, where x in S, y not in T.
+        // min( l(x) + l(y) - w(x,y) )
+        int minWeight = -1;
+        Map<Edge, Integer> results = new HashMap<Edge, Integer>();
+        for(Vertex x : S){
+            for(Edge e : x.edges){
+                Vertex y = getVertex(vertexList, 'y', e.yId);
+                if(T.contains(y)) continue; //Don't want this one.
+                Integer slack = x.label + y.label - e.weight;
+                results.put(e, slack);
+                minWeight = slack;
+            }
+        }
+
+        assert(results.size() > 0) : " findAlpha() empty results";
+        for(Edge e : results.keySet()){
+            if(results.get(e) <= minWeight) minWeight = results.get(e);
+        }
+        assert(minWeight >= 0) : " findAlpha() minWeight is negative";
+        return minWeight;
+
+    }
+
+    public static LinkedList<Vertex> updateVertexLabels(LinkedList<Vertex> vertexList, Integer alpha, LinkedList<Vertex> S, LinkedList<Vertex> T){
+        for(Vertex v : vertexList){
+            if(S.contains(v)) v.label -= alpha;
+            if(T.contains(v)) v.label += alpha;
+        }
+        return vertexList;
+    }
+
+
+    public static boolean sameElements(LinkedList<Vertex> a, LinkedList<Vertex> b){
+        if(a == null || b == null) return false;
+        if(a.size() != b.size()) return false;
+        for(Vertex v : a){
+            if(!b.contains(v)) return false;
+        }
+        for(Vertex v : b){
+            if(!a.contains(v)) return false;
         }
         return true;
     }
+
+
 
     public static void main(String[] args) {
         if(args.length != 1){
@@ -287,27 +336,17 @@ public class KM {
         LinkedList<Vertex> T = new LinkedList<Vertex>();            // "T set of y vertices"
         LinkedList<Edge> matchedEdges = new LinkedList<Edge>();     // "M set of matched edges"
 
-
-        //One Time Functions:
         LinkedList<Vertex> vertexList = loadInput(args[0]);         //List of all vertices
         initializeXlabels(vertexList);                              //Initialize x vertex labels to weight of max edge
         final int n = vertexList.size() / 2;                        // "n" (perfect matching)
         int alpha = 0;                                              //alpha for label updates
-
-        //TODO: edgeList may not be needed...
-        //LinkedList<Edge> edgeList = loadEdges(vertexList);          //List of all edges
-
-
-
-        //TODO: Create function to return alpha value:  alpha = findAlpha(vertexList, S, T)
-
 
 
         while(matchedEdges.size() < n){
             LinkedList<Edge> equalityEdges = findTightEdges(vertexList);
             LinkedList<Vertex> equalityVertices = getEqualityVertices(vertexList, equalityEdges);
 
-            //STEP 1
+            //STEP 2
             //
             // Check matchedEdges for an augmenting path and flip if found:
             LinkedList<Edge> foundEdges = findAugmentingPath(vertexList, equalityEdges, matchedEdges);
@@ -316,52 +355,53 @@ public class KM {
                 continue; //Restart the while loop
             }
 
-            //STEP 2
-            //
-            // No augmenting path found; improve labelling:
-            // Find a free x vertex and add it to S.
-            Vertex v = findUnmatchedVertex(equalityVertices, matchedEdges);
-            assert(v != null) : " No free x vertex found";  //If we didn't find a free x vertex, matchedEdges.size() should == n
+            // Otherwise pick a free x vertex and add it to S.
+            Vertex u = findUnmatchedVertex(equalityVertices, matchedEdges);
+            assert(u != null) : " No free x vertex found";  //If we didn't find a free x vertex, matchedEdges.size() should == n
 
             // Make S = {u} and T = 0
             S.clear();
-            S.add(v);
+            S.add(u);
             T.clear();
-
             Ns = findNeighborsOfS(equalityVertices, S);
-            Vertex y = selectYFromNsMinusT(Ns, T);
-            if(isYFree(y, matchedEdges)){
-                Edge newMatchedEdge = getEdge(equalityEdges, v.id, y.id);
-                assert(newMatchedEdge != null) : " newMatchedEdge is null";
-                matchedEdges.add(newMatchedEdge);
-                continue; //Restart the while loop
+
+            while(true) {
+                //STEP 3
+                //
+                // If N(s) = T, find alpha and update vertex labels
+                if (sameElements(Ns, T)) {
+                    alpha = findAlpha(vertexList, S, T);
+                    vertexList = updateVertexLabels(vertexList, alpha, S, T);
+                }
+                //STEP 4
+                //
+                // If N(s) != T, pick a y from N(s)-T
+                else{
+                    Vertex y = selectYFromNsMinusT(Ns, T);
+                    if (findYsMatchingEdge(y, matchedEdges) == null) {        //If y is free
+                        Edge newMatchedEdge = getEdge(equalityEdges, u.id, y.id);
+                        assert (newMatchedEdge != null) : " newMatchedEdge is null";
+                        matchedEdges.add(newMatchedEdge);
+                        break; // break the while(true) loop; Go to Step 2
+                    } else {                                                //y is not free, it is matched to z
+                        Edge e = findYsMatchingEdge(y, matchedEdges);
+                        Vertex z = getVertex(vertexList, 'x', e.xId);
+                        S.add(z);
+                        T.add(y);
+                        continue; //continue the while(true) loop; Go to Step 3
+                    }
+                }
             }
-            else{       //y is not free, must update labels.
-
-
-
-            }
-
-
-            //TODO: (1) Select a free X vertex. (vertexList where no edge in matchedEdges has this x)
-            //TODO: (2) Add the free X to list S.
-            //TODO: (3) If N(S) in T, update vertex labels after calculating 'alpha' value.
-            //TODO:     --Reload equalityGraph after labels have been updated.  GOTO WHILE.
-            //TODO: If N(S) != T, select a y from N(S) - T.
-            //TODO:     --If the y is free, add the new (x,y) edge to matchedEdges and GOTO WHILE.
-            //TODO:     --If y is already matched to z, add z to S and y to T GOTO 3.
-
-            break;
         }
-
-
-
 
 
 
         long endTime = System.nanoTime();
         long totalTime = endTime - startTime;
         System.out.println("Total time taken for KM is " + totalTime);
+
+        System.out.println("matchedEdges: " + matchedEdges);
+
         return;
     }
 }
