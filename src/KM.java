@@ -1,5 +1,7 @@
 
 
+import sun.awt.image.ImageWatched;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.LinkedList;
@@ -156,6 +158,31 @@ public class KM {
         return null;
     }
 
+    public static LinkedList<Edge> findAugmentingPath(LinkedList<Edge> foundEdges, LinkedList<Vertex> checkedVertices, LinkedList<Vertex> vertexList, LinkedList<Edge> matchedEdges){
+        //TODO: For each vertex in VertexList, call checkForUnmatchedEdge(eachVertex) to start the recursion.
+        //TODO: After the loop, if the list returned >= 3, return list, else return null
+
+        return foundEdges;
+    }
+
+    public static LinkedList<Edge> checkForMatchedEdge(LinkedList<Edge> foundEdges, LinkedList<Vertex> checkedVertices, LinkedList<Vertex> vertexList, LinkedList<Edge> matchedEdges, Vertex toCheck){
+        //TODO: For each edge in Vertex toCheck, get the Vertex end-point (where vertex != toCheck) for each edge, ensure it is not present in checkedVertices
+        //TODO: If the end-point is not in checkedVertices, check the edge to see if it's in matchedEdges.
+        //TODO: If it IS in matchedEdges, add the edge to foundEdges and call checkForUnmatchedEdge() on the end-point vertex.
+        //TODO:      After the loop: if foundEdges.size >= 3, return foundEdges, else return null.
+
+        return foundEdges;
+    }
+
+    public static LinkedList<Edge> checkForUnmatchedEdge(LinkedList<Edge> foundEdges, LinkedList<Vertex> checkedVertices, LinkedList<Vertex> vertexList, LinkedList<Edge> matchedEdges, Vertex toCheck){
+        //TODO: For each edge in Vertex toCheck, get the Vertex end-point (where vertex != toCheck) for each edge, ensure it is not present in checkedVertices
+        //TODO: If the end-point is not in checkedVertices, check the edge to see if it is NOT in matchedEdges.
+        //TODO: If it is NOT in matchedEdges, add the edge to foundEdges and call checkForMatchedEdge() on the end-point vertex.
+        //TODO:      After the loop: if foundEdges.size >= 3, return foundEdges, else return null.
+
+        return foundEdges;
+    }
+
 
     public static void main(String[] args) {
         if(args.length != 1){
@@ -201,6 +228,17 @@ public class KM {
 
         while(matchedEdges.size() < n){
             //TODO: Check equalityGraph for an augmenting path, and if found 'flip it' and GOTO WHILE.
+            LinkedList<Edge> foundEdges = new LinkedList<Edge>();
+            LinkedList<Vertex>checkedVertices = new LinkedList<Vertex>();
+
+
+            foundEdges = findAugmentingPath(foundEdges, checkedVertices, vertexList, matchedEdges);
+
+            if(foundEdges != null){
+                //TODO: Flip the edges in foundEdges
+
+            }
+
 
             //TODO: (1) Select a free X vertex. (vertexList where no edge in matchedEdges has this x)
             //TODO: (2) Add the free X to list S.
