@@ -140,7 +140,6 @@ public class KM {
         return equalityGraph;
     }
 
-
     public static Vertex getVertex(LinkedList<Vertex> vertexList, char partiteParam, int idParam){
         for(Vertex v : vertexList){
             if(v.partite == partiteParam && v.id == idParam)
@@ -148,7 +147,6 @@ public class KM {
         }
         return null;
     }
-
 
     public static Edge getEdge(LinkedList<Edge> edgeList, int xParam, int yParam){
         for(Edge e : edgeList){
@@ -158,28 +156,65 @@ public class KM {
         return null;
     }
 
-    public static LinkedList<Edge> findAugmentingPath(LinkedList<Edge> foundEdges, LinkedList<Vertex> checkedVertices, LinkedList<Vertex> vertexList, LinkedList<Edge> matchedEdges){
-        //TODO: For each vertex in VertexList, call checkForUnmatchedEdge(eachVertex) to start the recursion.
-        //TODO: After the loop, if the list returned >= 3, return list, else return null
 
-        return foundEdges;
+
+    public static LinkedList<Edge> findAugmentingPath(LinkedList<Vertex> vertexList, LinkedList<Edge> equalityGraph, LinkedList<Edge> matchedEdges){
+        LinkedList<Edge> foundEdges = new LinkedList<Edge>();
+        LinkedList<Vertex> checkedVertices = new LinkedList<Vertex>();
+        LinkedList<Vertex> equalityVertices = new LinkedList<Vertex>();
+
+        //Use the list of tight edges to populate list of vertices for the equality graph
+        for(Edge e : equalityGraph){
+            Vertex xVertex = getVertex(vertexList, 'x', e.xId);
+            Vertex yVertex = getVertex(vertexList, 'y', e.yId);
+
+            if(!equalityVertices.contains(xVertex))
+                equalityVertices.add(getVertex(vertexList, 'x', e.xId));
+            if(!equalityVertices.contains(yVertex))
+                equalityVertices.add(getVertex(vertexList, 'y', e.yId));
+        }
+
+        for(Vertex v : equalityVertices){
+            foundEdges = checkForUnmatchedEdge(foundEdges, checkedVertices, equalityVertices, matchedEdges, v);
+        }
+        if(foundEdges.size() >= 3){
+            System.out.println("findAugmentingPath().foundEdges: " + foundEdges);
+            return foundEdges;
+        }
+        else return null;
     }
 
     public static LinkedList<Edge> checkForMatchedEdge(LinkedList<Edge> foundEdges, LinkedList<Vertex> checkedVertices, LinkedList<Vertex> vertexList, LinkedList<Edge> matchedEdges, Vertex toCheck){
-        //TODO: For each edge in Vertex toCheck, get the Vertex end-point (where vertex != toCheck) for each edge, ensure it is not present in checkedVertices
-        //TODO: If the end-point is not in checkedVertices, check the edge to see if it's in matchedEdges.
-        //TODO: If it IS in matchedEdges, add the edge to foundEdges and call checkForUnmatchedEdge() on the end-point vertex.
-        //TODO:      After the loop: if foundEdges.size >= 3, return foundEdges, else return null.
+        if(checkedVertices.contains(toCheck)) return foundEdges;
+        checkedVertices.add(toCheck);
 
+        for(Edge e : toCheck.edges){
+            if(getVertex(vertexList, 'x', e.xId).equals(toCheck)) { //Determine whether toCheck is x or y and check the other side.
+                foundEdges.add(e);
+                return checkForUnmatchedEdge(foundEdges, checkedVertices, vertexList, matchedEdges, getVertex(vertexList, 'y', e.yId));
+            }
+            else {
+                foundEdges.add(e);
+                return checkForUnmatchedEdge(foundEdges, checkedVertices, vertexList, matchedEdges, getVertex(vertexList, 'x', e.xId));
+            }
+        }
         return foundEdges;
     }
 
     public static LinkedList<Edge> checkForUnmatchedEdge(LinkedList<Edge> foundEdges, LinkedList<Vertex> checkedVertices, LinkedList<Vertex> vertexList, LinkedList<Edge> matchedEdges, Vertex toCheck){
-        //TODO: For each edge in Vertex toCheck, get the Vertex end-point (where vertex != toCheck) for each edge, ensure it is not present in checkedVertices
-        //TODO: If the end-point is not in checkedVertices, check the edge to see if it is NOT in matchedEdges.
-        //TODO: If it is NOT in matchedEdges, add the edge to foundEdges and call checkForMatchedEdge() on the end-point vertex.
-        //TODO:      After the loop: if foundEdges.size >= 3, return foundEdges, else return null.
+        if(checkedVertices.contains(toCheck)) return foundEdges;
+        checkedVertices.add(toCheck);
 
+        for(Edge e : toCheck.edges){
+            if(getVertex(vertexList, 'x', e.xId).equals(toCheck)) { //Determine whether toCheck is x or y and check the other side.
+                foundEdges.add(e);
+                return checkForMatchedEdge(foundEdges, checkedVertices, vertexList, matchedEdges, getVertex(vertexList, 'y', e.yId));
+            }
+            else {
+                foundEdges.add(e);
+                return checkForMatchedEdge(foundEdges, checkedVertices, vertexList, matchedEdges, getVertex(vertexList, 'x', e.xId));
+            }
+        }
         return foundEdges;
     }
 
@@ -227,17 +262,13 @@ public class KM {
 
 
         while(matchedEdges.size() < n){
+
             //TODO: Check equalityGraph for an augmenting path, and if found 'flip it' and GOTO WHILE.
-            LinkedList<Edge> foundEdges = new LinkedList<Edge>();
-            LinkedList<Vertex>checkedVertices = new LinkedList<Vertex>();
-
-
-            foundEdges = findAugmentingPath(foundEdges, checkedVertices, vertexList, matchedEdges);
-
+            LinkedList<Edge> foundEdges = findAugmentingPath(vertexList, equalityGraph, matchedEdges);
             if(foundEdges != null){
                 //TODO: Flip the edges in foundEdges
-
             }
+
 
 
             //TODO: (1) Select a free X vertex. (vertexList where no edge in matchedEdges has this x)
