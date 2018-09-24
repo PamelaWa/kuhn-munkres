@@ -188,13 +188,14 @@ public class KM {
 
        for(Vertex v : equalityVertices) {
            System.out.println("findAugmentingPath for VERTEX: " + v);
+           augmentedPath.clear();
            augmentedPath = checkForUnmatchedEdge(augmentedPath, checkedVertices, vertexList, tightEdges, matchedEdges, v);
-           System.out.println("findAugmentingPath().augmentedPath RETURNED: " + augmentedPath);
+           System.out.println("findAugmentingPath().augmentedPath RETURNED: " + augmentedPath + "\n");
            if (augmentedPath.size() >= 3) {
                return augmentedPath;
            }
        }
-        System.out.println("findAugmentingPath(): No augmented path found");
+        System.out.println("findAugmentingPath(): No augmented path found" + "\n");
        return null;
     }
 
@@ -227,7 +228,7 @@ public class KM {
         }
         return augmentedPath;
     }
-    
+
 
     public static LinkedList<Edge> checkForMatchedEdge(LinkedList<Edge> augmentedPath, LinkedList<Vertex> checkedVertices, LinkedList<Vertex> vertexList, LinkedList<Edge> tightEdges, LinkedList<Edge> matchedEdges, Vertex toCheck){
         System.out.println("    checkforMatchedEdge() vertex: " + toCheck);
@@ -399,9 +400,9 @@ public class KM {
 
         System.out.println("n = " + n);
 
-        int outerCounter = 0;
-        while(matchedEdges.size() < n && outerCounter < 50){
-            outerCounter += 1;
+        //int outerCounter = 0;
+        while(matchedEdges.size() < n){ //&& outerCounter < 50){
+            //outerCounter += 1;
             LinkedList<Edge> tightEdges = findTightEdges(vertexList);
             LinkedList<Vertex> equalityVertices = getEqualityVertices(vertexList, tightEdges);
 
@@ -429,10 +430,8 @@ public class KM {
             System.out.println("1) Neighbors of S: " + Ns);
             System.out.println("1) T: " + T);
 
-            int counter = 0;
             boolean loop = true;
             while(true && loop) {
-                counter += 1;
                 //STEP 3
                 //
                 // If N(s) = T, find alpha and update vertex labels
