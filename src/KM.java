@@ -166,27 +166,17 @@ public class KM {
         LinkedList<Vertex> checkedVertices = new LinkedList<Vertex>();
         LinkedList<Vertex> equalityVertices = getEqualityVertices(vertexList, tightEdges);
 
-        System.out.println("\n*** findAugmentingPath.tightEdges: " + tightEdges);
-        System.out.println("*** findAugmentingPath.equalityVertices: " + equalityVertices);
-        System.out.println("*** findAugmentingPath.matchedEdges: " + matchedEdges);
-
        for(Vertex v : equalityVertices) {
-           System.out.println("findAugmentingPath for VERTEX: " + v);
            augmentedPath.clear();
            augmentedPath = checkForUnmatchedEdge(augmentedPath, checkedVertices, vertexList, tightEdges, matchedEdges, v);
-           System.out.println("findAugmentingPath().augmentedPath RETURNED: " + augmentedPath + "\n");
            if (augmentedPath.size() >= 3) {
                return augmentedPath;
            }
        }
-        System.out.println("findAugmentingPath(): No augmented path found" + "\n");
        return null;
     }
 
     public static LinkedList<Edge> checkForUnmatchedEdge(LinkedList<Edge> augmentedPath, LinkedList<Vertex> checkedVertices, LinkedList<Vertex> vertexList, LinkedList<Edge> tightEdges, LinkedList<Edge> matchedEdges, Vertex toCheck){
-        System.out.println("    checkforUnmatchedEdge() vertex: " + toCheck);
-        System.out.println("    checkforUnmatchedEdge() augmentedPath.size(): " + augmentedPath.size());
-
         for(Edge e : toCheck.edges){
             //Ensure edge is tight and unmatched
             if (!tightEdges.contains(e)) continue;
@@ -214,9 +204,6 @@ public class KM {
 
 
     public static LinkedList<Edge> checkForMatchedEdge(LinkedList<Edge> augmentedPath, LinkedList<Vertex> checkedVertices, LinkedList<Vertex> vertexList, LinkedList<Edge> tightEdges, LinkedList<Edge> matchedEdges, Vertex toCheck){
-        System.out.println("    checkforMatchedEdge() vertex: " + toCheck);
-        System.out.println("    checkforMatchedEdge() augmentedPath.size(): " + augmentedPath.size());
-
         for(Edge e : toCheck.edges){
             //Ensure edge is tight and matched
             if (!tightEdges.contains(e)) continue;
@@ -317,11 +304,9 @@ public class KM {
             }
         }
 
-        assert(results.size() > 0) : " findAlpha() empty results";
         for(Edge e : results.keySet()){
             if(results.get(e) <= minWeight) minWeight = results.get(e);
         }
-        assert(minWeight >= 0) : " findAlpha() minWeight is negative";
         return minWeight;
     }
 
@@ -366,18 +351,6 @@ public class KM {
         int alpha = 0;                                              //alpha for label updates
 
 
-        System.out.println("Starting; vertexList: " + vertexList);
-        for(Vertex v : vertexList){
-            System.out.print("Vertex: " + v + " Edges: ");
-            for (Edge e : v.edges){
-                System.out.print( e + "; ");
-            }
-            System.out.print("\n");
-        }
-
-
-        System.out.println("n = " + n);
-
         while(matchedEdges.size() < n){
             LinkedList<Edge> tightEdges = findTightEdges(vertexList);
             LinkedList<Vertex> equalityVertices = getEqualityVertices(vertexList, tightEdges);
@@ -387,24 +360,17 @@ public class KM {
             // Check matchedEdges for an augmenting path and flip if found:
             LinkedList<Edge> foundEdges = findAugmentingPath(vertexList, tightEdges, matchedEdges);
             if(foundEdges != null){
-                System.out.println("flipping augmenting path");
                 matchedEdges = flipAugmentingPath(foundEdges, matchedEdges);
                 continue; //Restart the while loop
             }
 
             // Otherwise pick a free x vertex and add it to S.
             Vertex u = findUnmatchedVertex(equalityVertices, matchedEdges);
-            System.out.println("\nUnmatchedVertex u: " + u);
-            assert(u != null) : " No free x vertex found";  //If we didn't find a free x vertex, matchedEdges.size() should == n
 
-            // Make S = {u} and T = 0
             S.clear();
             S.add(u);
             T.clear();
             Ns = findNeighborsOfS(equalityVertices, tightEdges, S);
-            System.out.println("1) S: " + S);
-            System.out.println("1) Neighbors of S: " + Ns);
-            System.out.println("1) T: " + T);
 
             boolean loop = true;
             while(loop) {
@@ -413,7 +379,6 @@ public class KM {
                 // If N(s) = T, find alpha and update vertex labels
                 if (sameElements(Ns, T)) {
                     alpha = findAlpha(vertexList, S, T);
-                    System.out.println("N(s) = t; Updating labels with alpha: " + alpha);
                     vertexList = updateVertexLabels(vertexList, alpha, S, T);
                     loop = false;
 
@@ -423,26 +388,19 @@ public class KM {
                 // If N(s) != T, pick a y from N(s)-T
                 else{
                     Vertex y = selectYFromNsMinusT(Ns, T);
-                    System.out.println("N(s) != T; selecting vertex y: " + y);
                     if (findYsMatchingEdge(y, matchedEdges) == null) {        //If y is free
                         Edge newMatchedEdge = getEdge(tightEdges, u.id, y.id);
                         if(newMatchedEdge != null){
-                            System.out.println("y is free, adding to matchedEdges");
                             matchedEdges.add(newMatchedEdge);
-                            System.out.println("Matched Edges: " + matchedEdges);
 
                         }
                         break; // break the while(loop) loop; Go to Step 2
                     } else {                                                //y is not free, it is matched to z
                         Edge e = findYsMatchingEdge(y, matchedEdges);
                         Vertex z = getVertex(vertexList, 'x', e.xId);
-                        System.out.println("y is not free, matched to " + z);
                         S.add(z);
                         Ns = findNeighborsOfS(vertexList, tightEdges, S);
                         T.add(y);
-                        System.out.println("2) S: " + S);
-                        System.out.println("2) Neighbors of S: " + Ns);
-                        System.out.println("2) T: " + T);
                         continue; //continue the while(loop) loop; Go to Step 3
                     }
                 }
@@ -451,8 +409,12 @@ public class KM {
 
         long endTime = System.nanoTime();
         long totalTime = endTime - startTime;
-        System.out.println("\n\nTotal time taken for KM is " + totalTime);
-        System.out.println("matchedEdges: " + matchedEdges);
+        System.out.println("Total time taken for KM is " + totalTime);
+
+        int totalWeight = 0;
+        for(Edge e : matchedEdges)totalWeight += e.weight;
+        System.out.println(totalWeight);
+        for(Edge e : matchedEdges)System.out.println(e);
 
         return;
     }
