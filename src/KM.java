@@ -366,15 +366,14 @@ public class KM {
             T.clear();
             Ns = findNeighborsOfS(equalityVertices, tightEdges, S);
 
-            boolean loop = true;
-            while(loop) {
+            while(true) {
                 //STEP 3
                 //
                 // If N(s) = T, find alpha and update vertex labels
                 if (sameElements(Ns, T)) {
                     alpha = findAlpha(vertexList, S, T);
                     updateVertexLabels(vertexList, alpha, S, T);
-                    loop = false;
+                    break; // break the while(true) loop, goto Step 2
                 }
                 //STEP 4
                 //
@@ -386,7 +385,7 @@ public class KM {
                         if(newMatchedEdge != null){
                             matchedEdges.add(newMatchedEdge);
                         }
-                        break; // break the while(loop) loop; Go to Step 2
+                        break; // break the while(true) loop; Go to Step 2
                     } else {                                                //y is not free, it is matched to z
                         Edge e = findYsMatchingEdge(y, matchedEdges);
                         Vertex z = getVertex(vertexList, 'x', e.xId);
