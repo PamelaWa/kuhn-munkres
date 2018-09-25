@@ -1,9 +1,17 @@
-
+/*****************************
+ * Social Computing - Fall 2018
+ * Prof Garg
+ * Homework 1 - Problem 4
+ * Kuhn-Munkres Bipartite Matching Algorithm
+ * Patrick Sigourney
+ * Robert Pate
+ *****************************/
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.HashMap;
 import java.util.LinkedList;
-
+import java.util.Map;
 
 public class KM {
 
@@ -31,7 +39,7 @@ public class KM {
 
         @Override
         public String toString(){
-            return partite + Integer.toString(id) + "-label:" + Integer.toString(label);
+            return partite + Integer.toString(id);
         }
     }
 
@@ -59,12 +67,13 @@ public class KM {
 
         @Override
         public String toString(){
-            return "(" + xId + "," + yId + "):W" + weight;
+            return "(" + xId + "," + yId + ")";
         }
     }
 
     public static LinkedList<Vertex> loadInput(String inputFile){
         LinkedList<Vertex> vertexList = new LinkedList<Vertex>();
+        //Create the X and Y vertices and populated the X edges
         try{
             BufferedReader br = new BufferedReader(new FileReader(inputFile));
             int n = Integer.valueOf(br.readLine());
@@ -77,24 +86,21 @@ public class KM {
                 for(Integer j = 1; j <= n; j++){    //For each column - Create Edges
                     Edge e = new Edge(i, j, Integer.valueOf(arrLine[j-1]));
                     xv.edges.push(e);
-                    yv.edges.push(e);
                 }
                 vertexList.push(xv);
                 vertexList.push(yv);
-
             }
         }catch (Exception e) {System.out.println("LoadInput() Exception!: " + e);}
-        return vertexList;
-    }
 
-    public static LinkedList<Edge> loadEdges(LinkedList<Vertex> vertexList){
-        LinkedList<Edge> edgeList = new LinkedList<Edge>();
-        for(Vertex v : vertexList){
-            for(Edge e : v.edges){
-                edgeList.add(e);
+        //Populate edges for the Y vertices
+        for(Vertex xv : vertexList){
+            if(xv.partite != 'x') continue;
+            for(Edge e : xv.edges){
+                Vertex y = getVertex(vertexList, 'y', e.yId);
+                y.edges.add(e);
             }
         }
-        return edgeList;
+        return vertexList;
     }
 
     public static void initializeXlabels(LinkedList<Vertex> vertexList){
@@ -124,29 +130,14 @@ public class KM {
         return equalityList;
     }
 
-
-    //TODO: might delete this... equalityGraph should be the tight edges, not the vertices.
-    public static LinkedList<Vertex> findEquality(LinkedList<Vertex> vertexList){
-        LinkedList<Vertex> equalityGraph = new LinkedList<Vertex>();
-        //If the tight edge vertices aren't already in equalityGraph, add them.
-        for(Edge e : findTightEdges(vertexList)){
-            if(getVertex(equalityGraph, 'x', e.xId) == null)
-                equalityGraph.add(getVertex(vertexList, 'x', e.xId));
-            if(getVertex(equalityGraph, 'y', e.yId) == null)
-                equalityGraph.add(getVertex(vertexList, 'y', e.yId));
-        }
-        return equalityGraph;
-    }
-
-
     public static Vertex getVertex(LinkedList<Vertex> vertexList, char partiteParam, int idParam){
         for(Vertex v : vertexList){
-            if(v.partite == partiteParam && v.id == idParam)
+            if(v.partite == partiteParam && v.id == Integer.valueOf(idParam)){
                 return v;
+            }
         }
         return null;
     }
-
 
     public static Edge getEdge(LinkedList<Edge> edgeList, int xParam, int yParam){
         for(Edge e : edgeList){
@@ -156,6 +147,190 @@ public class KM {
         return null;
     }
 
+    public static LinkedList<Vertex> getEqualityVertices(LinkedList<Vertex> vertexList, LinkedList<Edge> tightEdges){
+        LinkedList<Vertex> equalityVertices = new LinkedList<Vertex>();
+        for(Edge e : tightEdges){
+            Vertex xVertex = getVertex(vertexList, 'x', e.xId);
+            Vertex yVertex = getVertex(vertexList, 'y', e.yId);
+
+            if(!equalityVertices.contains(xVertex))
+                equalityVertices.add(getVertex(vertexList, 'x', e.xId));
+            if(!equalityVertices.contains(yVertex))
+                equalityVertices.add(getVertex(vertexList, 'y', e.yId));
+        }
+        return equalityVertices;
+    }
+
+    public static LinkedList<Edge> findAugmentingPath(LinkedList<Vertex> vertexList, LinkedList<Edge> tightEdges, LinkedList<Edge> matchedEdges){
+        LinkedList<Edge> augmentedPath = new LinkedList<Edge>();
+        LinkedList<Vertex> checkedVertices = new LinkedList<Vertex>();
+        LinkedList<Vertex> equalityVertices = getEqualityVertices(vertexList, tightEdges);
+
+       for(Vertex v : equalityVertices) {
+           augmentedPath.clear();
+           augmentedPath = checkForUnmatchedEdge(augmentedPath, checkedVertices, vertexList, tightEdges, matchedEdges, v);
+           if (augmentedPath.size() >= 3) {
+               return augmentedPath;
+           }
+       }
+       return null;
+    }
+
+    public static LinkedList<Edge> checkForUnmatchedEdge(LinkedList<Edge> augmentedPath, LinkedList<Vertex> checkedVertices, LinkedList<Vertex> vertexList, LinkedList<Edge> tightEdges, LinkedList<Edge> matchedEdges, Vertex toCheck){
+        for(Edge e : toCheck.edges){
+            //Ensure edge is tight and unmatched
+            if (!tightEdges.contains(e)) continue;
+            if (matchedEdges.contains(e)) continue;
+
+            //Get the vertex for the next hop
+            char nextPartite;
+            int nextId;
+            if(toCheck.partite == 'x'){
+                nextPartite = 'y';
+                nextId = e.yId;
+            }
+            else {
+                nextPartite = 'x';
+                nextId = e.xId;
+            }
+            Vertex nextVertex = getVertex(vertexList, nextPartite, nextId);
+            if(nextVertex == null) return augmentedPath;
+
+            if(!augmentedPath.contains(e)) augmentedPath.add(e);
+            return checkForMatchedEdge(augmentedPath, checkedVertices, vertexList, tightEdges, matchedEdges, nextVertex);
+        }
+        return augmentedPath;
+    }
+
+
+    public static LinkedList<Edge> checkForMatchedEdge(LinkedList<Edge> augmentedPath, LinkedList<Vertex> checkedVertices, LinkedList<Vertex> vertexList, LinkedList<Edge> tightEdges, LinkedList<Edge> matchedEdges, Vertex toCheck){
+        for(Edge e : toCheck.edges){
+            //Ensure edge is tight and matched
+            if (!tightEdges.contains(e)) continue;
+            if (!matchedEdges.contains(e)) continue;
+
+            //Get the vertex for the next hop
+            char nextPartite;
+            int nextId;
+            if(toCheck.partite == 'x'){
+                nextPartite = 'y';
+                nextId = e.yId;
+            }
+            else {
+                nextPartite = 'x';
+                nextId = e.xId;
+            }
+            Vertex nextVertex = getVertex(vertexList, nextPartite, nextId);
+            if(nextVertex == null) return augmentedPath;
+
+            if(!augmentedPath.contains(e)) augmentedPath.add(e);
+            return checkForUnmatchedEdge(augmentedPath, checkedVertices, vertexList, tightEdges, matchedEdges, nextVertex);
+        }
+        return augmentedPath;
+    }
+
+
+
+    public static LinkedList<Edge> flipAugmentingPath(LinkedList<Edge> foundEdges, LinkedList<Edge> matchedEdges){
+        //Take the list of foundEdges, if present in matchedEdges, remove them.
+        //If not present in matchedEdges, add them.
+
+        LinkedList<Edge> toAdd = new LinkedList<Edge>();
+        LinkedList<Edge> toDel = new LinkedList<Edge>();
+
+        for(Edge e : foundEdges){
+            if(matchedEdges.contains(e)) toDel.add(e);
+            else toAdd.add(e);
+        }
+
+        for(Edge e : toDel) matchedEdges.remove(e);
+        for(Edge e : toAdd) matchedEdges.add(e);
+        return matchedEdges;
+    }
+
+    public static Vertex findUnmatchedVertex(LinkedList<Vertex> vertexList, LinkedList<Edge> matchedEdges){
+        //For x vertex in vertexList, find the first vertex which doesn't have a matched edge attached.
+        for(Vertex v : vertexList){
+            if(v.partite == 'y') continue; //Ignore the y vertices
+            boolean matched = false;
+            for(Edge e : matchedEdges){
+                if(e.xId == v.id) matched = true;
+            }
+            if(!matched) return v;
+        }
+        return null;
+    }
+
+    public static LinkedList<Vertex> findNeighborsOfS(LinkedList<Vertex> vertexList, LinkedList<Edge> tightEdges, LinkedList<Vertex> S){
+        LinkedList<Vertex> neighbors = new LinkedList<Vertex>();
+        for (Vertex v : S){
+            for (Edge e : v.edges){
+                if(!tightEdges.contains(e)) continue;
+                Vertex yNeighbor = getVertex(vertexList, 'y', e.yId);
+                if(yNeighbor != null && !neighbors.contains(yNeighbor))
+                    neighbors.add(yNeighbor);
+            }
+        }
+        return neighbors;
+    }
+
+
+    public static Vertex selectYFromNsMinusT(LinkedList<Vertex> Ns, LinkedList<Vertex> T){
+        for(Vertex neighbor : Ns){
+            if(!T.contains(neighbor)) return neighbor;
+        }
+        return null;
+    }
+
+    public static Edge findYsMatchingEdge(Vertex y, LinkedList<Edge> matchedEdges){
+        for(Edge e : matchedEdges){
+            if (e.yId == y.id) return e;
+        }
+        return null;
+    }
+
+    public static Integer findAlpha(LinkedList<Vertex> vertexList, LinkedList<Vertex> S, LinkedList<Vertex> T){
+        //Alpha is the minimum slack, where x in S, y not in T.
+        // min( l(x) + l(y) - w(x,y) )
+        int minWeight = -1;
+        Map<Edge, Integer> results = new HashMap<Edge, Integer>();
+        for(Vertex x : S){
+            for(Edge e : x.edges){
+                Vertex y = getVertex(vertexList, 'y', e.yId);
+                if(T.contains(y)) continue; //Don't want this one.
+                Integer slack = x.label + y.label - e.weight;
+                results.put(e, slack);
+                minWeight = slack;
+            }
+        }
+
+        for(Edge e : results.keySet()){
+            if(results.get(e) <= minWeight) minWeight = results.get(e);
+        }
+        return minWeight;
+    }
+
+    public static LinkedList<Vertex> updateVertexLabels(LinkedList<Vertex> vertexList, Integer alpha, LinkedList<Vertex> S, LinkedList<Vertex> T){
+        for(Vertex v : vertexList){
+            if(S.contains(v)) v.label -= alpha;
+            if(T.contains(v)) v.label += alpha;
+        }
+        return vertexList;
+    }
+
+    public static boolean sameElements(LinkedList<Vertex> a, LinkedList<Vertex> b){
+        if(a == null || b == null) return false;
+        if(a.size() != b.size()) return false;
+        for(Vertex v : a){
+            if(!b.contains(v)) return false;
+        }
+        for(Vertex v : b){
+            if(!a.contains(v)) return false;
+        }
+        return true;
+    }
+
+
 
     public static void main(String[] args) {
         if(args.length != 1){
@@ -164,63 +339,83 @@ public class KM {
         }
 
         long startTime = System.nanoTime();
-        //One Time Functions:
-        LinkedList<Vertex> vertexList = loadInput(args[0]);         //List of all vertices
-        LinkedList<Edge> edgeList = loadEdges(vertexList);          //List of all edges
-        initializeXlabels(vertexList);                              //Initialize x vertex labels to weight of max edge
 
-
-        //Functions that will be called multiple times:
-        LinkedList<Edge> equalityGraph = findTightEdges(vertexList); //List of tight edges
-
-        LinkedList<Edge> matchedEdges = new LinkedList<Edge>();     // "M set of matched edges"
         LinkedList<Vertex> S = new LinkedList<Vertex>();            // "S set of x vertices"
+        LinkedList<Vertex> Ns;                                      // "N(s) neighbors of S"
         LinkedList<Vertex> T = new LinkedList<Vertex>();            // "T set of y vertices"
+        LinkedList<Edge> matchedEdges = new LinkedList<Edge>();     // "M set of matched edges"
 
-        LinkedList<Edge> augPath = new LinkedList<Edge>();          //stores an augmenting path
-        int alpha = 0;                                              //alpha for label updates
+        LinkedList<Vertex> vertexList = loadInput(args[0]);         //List of all vertices
+        initializeXlabels(vertexList);                              //Initialize x vertex labels to weight of max edge
         final int n = vertexList.size() / 2;                        // "n" (perfect matching)
-
-        //TODO: Create function to find/return augmenting path:  augPath = findAugPath(equalityList, matchedEdges);
-
-        //TODO: Create function to return alpha value:  alpha = findAlpha(vertexList, S, T)
-
-
-        Vertex x1 = getVertex(vertexList, 'x', 1);
-        System.out.println("x1: " + x1);
-
-        Vertex y2 = getVertex(vertexList, 'y', 2);
-        System.out.println("y2: " + y2);
-
-        System.out.println("x1.edges: " + x1.edges);
-        System.out.println("y2.edges: " + y2.edges);
-
-        System.out.println("equalityGraph:" + equalityGraph);
-
+        int alpha = 0;                                              //alpha for label updates
 
 
         while(matchedEdges.size() < n){
-            //TODO: Check equalityGraph for an augmenting path, and if found 'flip it' and GOTO WHILE.
+            LinkedList<Edge> tightEdges = findTightEdges(vertexList);
+            LinkedList<Vertex> equalityVertices = getEqualityVertices(vertexList, tightEdges);
 
-            //TODO: (1) Select a free X vertex. (vertexList where no edge in matchedEdges has this x)
-            //TODO: (2) Add the free X to list S.
-            //TODO: (3) If N(S) in T, update vertex labels after calculating 'alpha' value.
-            //TODO:     --Reload equalityGraph after labels have been updated.  GOTO WHILE.
-            //TODO: If N(S) != T, select a y from N(S) - T.
-            //TODO:     --If the y is free, add the new (x,y) edge to matchedEdges and GOTO WHILE.
-            //TODO:     --If y is already matched to z, add z to S and y to T GOTO 3.
+            //STEP 2
+            //
+            // Check matchedEdges for an augmenting path and flip if found:
+            LinkedList<Edge> foundEdges = findAugmentingPath(vertexList, tightEdges, matchedEdges);
+            if(foundEdges != null){
+                matchedEdges = flipAugmentingPath(foundEdges, matchedEdges);
+                continue; //Restart the while loop
+            }
 
-            break;
+            // Otherwise pick a free x vertex and add it to S.
+            Vertex u = findUnmatchedVertex(equalityVertices, matchedEdges);
+
+            S.clear();
+            S.add(u);
+            T.clear();
+            Ns = findNeighborsOfS(equalityVertices, tightEdges, S);
+
+            boolean loop = true;
+            while(loop) {
+                //STEP 3
+                //
+                // If N(s) = T, find alpha and update vertex labels
+                if (sameElements(Ns, T)) {
+                    alpha = findAlpha(vertexList, S, T);
+                    vertexList = updateVertexLabels(vertexList, alpha, S, T);
+                    loop = false;
+
+                }
+                //STEP 4
+                //
+                // If N(s) != T, pick a y from N(s)-T
+                else{
+                    Vertex y = selectYFromNsMinusT(Ns, T);
+                    if (findYsMatchingEdge(y, matchedEdges) == null) {        //If y is free
+                        Edge newMatchedEdge = getEdge(tightEdges, u.id, y.id);
+                        if(newMatchedEdge != null){
+                            matchedEdges.add(newMatchedEdge);
+
+                        }
+                        break; // break the while(loop) loop; Go to Step 2
+                    } else {                                                //y is not free, it is matched to z
+                        Edge e = findYsMatchingEdge(y, matchedEdges);
+                        Vertex z = getVertex(vertexList, 'x', e.xId);
+                        S.add(z);
+                        Ns = findNeighborsOfS(vertexList, tightEdges, S);
+                        T.add(y);
+                        continue; //continue the while(loop) loop; Go to Step 3
+                    }
+                }
+            }
         }
-
-
-
-
-
 
         long endTime = System.nanoTime();
         long totalTime = endTime - startTime;
         System.out.println("Total time taken for KM is " + totalTime);
+
+        int totalWeight = 0;
+        for(Edge e : matchedEdges)totalWeight += e.weight;
+        System.out.println(totalWeight);
+        for(Edge e : matchedEdges)System.out.println(e);
+
         return;
     }
 }
