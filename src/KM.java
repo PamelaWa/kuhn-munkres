@@ -247,7 +247,9 @@ public class KM {
 
     private static Vertex findUnmatchedVertex(LinkedList<Vertex> vertexList, LinkedList<Edge> matchedEdges){
         //For x vertex in vertexList, find the first vertex which doesn't have a matched edge attached.
+        System.out.println("findUnmatchedVertex; vertexList: " + vertexList);
         for(Vertex v : vertexList){
+            System.out.println("findUnmatchedVertex; checking: " + v);
             if(v.partite == 'y') continue; //Ignore the y vertices
             boolean matched = false;
             for(Edge e : matchedEdges){
@@ -349,6 +351,8 @@ public class KM {
         while(matchedEdges.size() < n){
             LinkedList<Edge> tightEdges = findTightEdges(vertexList);
             LinkedList<Vertex> equalityVertices = getEqualityVertices(vertexList, tightEdges);
+            System.out.println("vertexList: " + vertexList);
+            System.out.println("matchedEdges: " + matchedEdges);
 
             //STEP 2
             //
@@ -356,16 +360,24 @@ public class KM {
             LinkedList<Edge> foundEdges = findAugmentingPath(vertexList, tightEdges, matchedEdges);
             if(foundEdges != null){
                 flipAugmentingPath(foundEdges, matchedEdges);
+                System.out.println("augmenting flipped");
                 continue; //Restart the while loop
             }
 
             // Otherwise pick a free x vertex and add it to S.
-            Vertex u = findUnmatchedVertex(equalityVertices, matchedEdges);
+
+            System.out.println("\nvertexList: " + vertexList);
+            System.out.println("equalityVertices: " + equalityVertices);
+            System.out.println("matchedEdges: " + matchedEdges);
+            System.out.println("tightEdges: " + tightEdges);
+            Vertex u = findUnmatchedVertex(vertexList, matchedEdges);  //TODO: This was equalityVertices instead of vertexList, which was causing the null pointer
 
             S.clear();
             S.add(u);
             T.clear();
+            System.out.println("S: " + S);
             Ns = findNeighborsOfS(equalityVertices, tightEdges, S);
+            System.out.println("Ns: " + Ns);
 
             while(true) {
                 //STEP 3
