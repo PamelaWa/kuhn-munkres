@@ -9,6 +9,7 @@
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -405,6 +406,12 @@ public class KM {
         int totalWeight = 0;
         for(Edge e : matchedEdges)totalWeight += e.weight;
         System.out.println(totalWeight);
+        matchedEdges.sort(new Comparator<Edge>() {
+            @Override
+            public int compare(Edge o1, Edge o2) {
+                return o1.xId - o2.xId;
+            }
+        });
         for(Edge e : matchedEdges)System.out.println(e);
     }
 }
